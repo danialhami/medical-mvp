@@ -1,0 +1,43 @@
+{
+  "diseases": [
+    {
+      "id": "D001",
+      "name_zh": "特应性皮炎 (湿疹)",
+      "name_en": "Atopic Dermatitis (Eczema)",
+      "icd_10": "L20.9",
+      "typical_symptoms": ["皮肤干燥", "剧烈瘙痒", "红斑", "脱屑"],
+      "trending_drugs": [
+        {
+          "trade_name": "达必妥 (Dupixent)",
+          "generic_name": "度普利尤单抗",
+          "trend_status": "Highly Trending",
+          "reason": "First-line biologic targeting IL-4/IL-13, preferred for moderate-to-severe cases.",
+          "medical_insurance": "国家医保乙类 (Covered via National Insurance)"
+        },
+        {
+          "trade_name": "艾迪特",
+          "generic_name": "克立硼罗软膏",
+          "trend_status": "Rising",
+          "reason": "Topical non-steroidal PDE4 inhibitor, highly popular for pediatric patients.",
+          "medical_insurance": "自费/部分医保 (Partial Coverage)"
+        }
+      ]
+    },
+    {
+      "id": "D002",
+      "name_zh": "寻常痤疮",
+      "name_en": "Acne Vulgaris",
+      "icd_10": "L70.0",
+      "typical_symptoms": ["粉刺", "丘疹", "脓疱", "皮脂溢出"],
+      "trending_drugs": [
+        {
+          "trade_name": "达芙文 (Differin)",
+          "generic_name": "阿达帕林凝胶",
+          "trend_status": "Stable Standard",
+          "reason": "Gold standard topical retinoid for comedonal acne.",
+          "medical_insurance": "国家医保甲类 (Fully Covered)"
+        }
+      ]
+    }
+  ]
+]
