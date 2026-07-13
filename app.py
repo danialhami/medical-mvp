@@ -29,6 +29,17 @@ st.markdown("""
     
     /* Clean up the file uploader */
     .stFileUploader { border-radius: 10px; background-color: white; padding: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    
+    /* Waiting state styling */
+    .waiting-state {
+        text-align: center;
+        padding: 50px 20px;
+        color: #8898aa;
+        background: white;
+        border-radius: 15px;
+        border: 2px dashed #e0e4f1;
+        margin-top: 20px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -46,6 +57,7 @@ if language == "中文 (Chinese)":
         "symptoms_placeholder": "在此输入症状，系统将实时进行疾病预测...",
         "upload_label": "📷 上传皮损图像",
         "output_header": "🤖 实时诊断与概率分析",
+        "waiting_msg": "⏳ 等待临床输入...<br><span style='font-size:14px;'>请在左侧输入症状，系统将自动进行实时鉴别诊断。</span>",
         "primary_dx": "首选诊断 (Primary Diagnosis)",
         "confidence": "置信度:",
         "ddx_header": "📊 鉴别诊断概率 (Top 3 DDx)",
@@ -54,7 +66,6 @@ if language == "中文 (Chinese)":
         "disclaimer": "⚠️ 仅供医疗专业人员参考。最终决定需由执业医师确认。"
     }
     db_file = "dermatology_core_data_CN.json"
-    default_disease = "特应性皮炎"
 else:
     ui = {
         "title": "AI Doctor Co-Pilot System",
@@ -64,6 +75,7 @@ else:
         "symptoms_placeholder": "Start typing symptoms here for instant predictions...",
         "upload_label": "📷 Upload Lesion Image",
         "output_header": "🤖 Real-Time Diagnostic Insights",
+        "waiting_msg": "⏳ Awaiting clinical data...<br><span style='font-size:14px;'>Start typing symptoms on the left to trigger real-time differential diagnosis.</span>",
         "primary_dx": "Primary Diagnosis",
         "confidence": "Confidence:",
         "ddx_header": "📊 Differential Diagnosis Probabilities (Top 3)",
@@ -72,7 +84,6 @@ else:
         "disclaimer": "⚠️ For medical professional use only. Final signature required by a physician."
     }
     db_file = "dermatology_core_data_EN.json"
-    default_disease = "atopic_dermatitis"
 
 # 3. Load Local Knowledge Base
 @st.cache_data
@@ -95,7 +106,7 @@ col1, spacer, col2 = st.columns([1.2, 0.1, 1.5])
 
 with col1:
     st.markdown(f"### {ui['input_header']}")
-    # Real-time text area: Streamlit auto-reruns when the user pauses/clicks away
+    # Real-time text area
     symptoms = st.text_area(ui["symptoms_label"], placeholder=ui["symptoms_placeholder"], height=200)
     uploaded_image = st.file_uploader(ui["upload_label"], type=["jpg", "jpeg", "png"])
     
@@ -105,14 +116,23 @@ with col1:
 with col2:
     st.markdown(f"### {ui['output_header']}")
     
-    # --- 100% OFFLINE PROBABILITY MATH ENGINE ---
-    scores = {}
-    symptom_lower = symptoms.lower() if symptoms else ""
-    
-    # Calculate scores for ALL diseases simultaneously
-    for key, data in kb["conditions"].items():
-        score = 0
-        if symptoms:
+    # Check if there is actual input before running the math engine
+    if not symptoms.strip():
+        # Display the beautiful waiting state
+        st.markdown(f"""
+        <div class="waiting-state">
+            <h2>{ui['waiting_msg']}</h2>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        # --- 100% OFFLINE PROBABILITY MATH ENGINE ---
+        scores = {}
+        symptom_lower = symptoms.lower()
+        
+        # Calculate scores for ALL diseases simultaneously
+        for key, data in kb["conditions"].items():
+            score = 0
+            
             # 1. High-weight exact name matches
             if key.lower() in symptom_lower: score += 20
             if data.get("name_en", "").lower() in symptom_lower: score += 20
@@ -130,77 +150,76 @@ with col2:
             for ddx in ddx_list:
                 disease_str = ddx.get("disease", ddx.get("疾病", "")).replace("_", " ").lower()
                 if disease_str and disease_str in symptom_lower: score += 1
+                    
+            scores[key] = score
+
+        # Sort diseases by score
+        sorted_diseases = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        
+        # Calculate Probabilities (Relative Confidence for Top 3)
+        top_3 = sorted_diseases[:3]
+        top_total_score = sum(v for k, v in top_3)
+        
+        probabilities = []
+        if top_total_score > 0:
+            for k, v in top_3:
+                prob = (v / top_total_score) * 100
+                probabilities.append((k, prob))
+        else:
+            # If they typed random letters that don't match anything, default safely
+            default_key = list(kb["conditions"].keys())[0]
+            probabilities = [(default_key, 98.5), (list(kb["conditions"].keys())[1], 1.0), (list(kb["conditions"].keys())[2], 0.5)]
+
+        # --- RENDER STUNNING UI ---
+        
+        # 1. Primary Diagnosis Card
+        primary_key, primary_prob = probabilities[0]
+        matched_data = kb["conditions"][primary_key]
+        
+        name = matched_data.get("name", primary_key)
+        name_en_or_cn = matched_data.get("name_en", matched_data.get("name_cn", ""))
+        
+        st.markdown(f"""
+        <div class="diagnosis-card">
+            <h4 style="color: #4CAF50; margin-top: 0;">{ui['primary_dx']}</h4>
+            <h2>{name} <span style="font-size: 18px; color: #666;">({name_en_or_cn})</span></h2>
+            <p><b>{ui['icd_label']}</b> <code>{matched_data['icd10']}</code></p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # 2. Probability Progress Bars (Top 3 DDx)
+        st.markdown(f"**{ui['ddx_header']}**")
+        for dx_key, prob in probabilities:
+            dx_name = kb["conditions"][dx_key].get("name", dx_key)
+            col_dx, col_prob = st.columns([3, 1])
+            with col_dx:
+                st.markdown(f"*{dx_name}*")
+                st.progress(prob / 100.0)
+            with col_prob:
+                st.markdown(f"<h3 style='text-align: right; color: #1e3c72; margin-top: -5px;'>{prob:.1f}%</h3>", unsafe_allow_html=True)
                 
-        scores[key] = score
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # 3. Beautiful Expanding Prescription Panels
+        st.markdown(f"### {ui['rx_header']}")
+        prescriptions = matched_data.get("处方", matched_data.get("prescriptions", {}))
+        
+        for category, drugs in prescriptions.items():
+            with st.expander(f"📌 {category.replace('_', ' ').title()}", expanded=True):
+                for item in drugs:
+                    if "drug" in item or "药品" in item:
+                        d_name = item.get("drug", item.get("药品", "Unknown Drug"))
+                        d_en = item.get("英文名", item.get("drug_cn", ""))
+                        dose = item.get("dose", item.get("用法", "Standard dose"))
+                        
+                        st.markdown(f"**{d_name}** ({d_en})  \n*{dose}*")
+                        
+                        alert = item.get("alert", item.get("警示", ""))
+                        if alert: 
+                            color = "red" if "RED" in alert.upper() or "红" in alert else "orange" if "YELLOW" in alert.upper() or "黄" in alert else "green"
+                            st.markdown(f":{color}[**Safety Alert: {alert}**]")
+                        st.divider()
+                    else:
+                        st.info(f"💡 {item.get('special', item.get('特殊说明', 'Intervention'))}")
 
-    # Sort diseases by score
-    sorted_diseases = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-    
-    # Calculate Probabilities (Relative Confidence for Top 3)
-    top_3 = sorted_diseases[:3]
-    top_total_score = sum(v for k, v in top_3)
-    
-    probabilities = []
-    if top_total_score > 0:
-        for k, v in top_3:
-            # Softmax-style relative percentage
-            prob = (v / top_total_score) * 100
-            probabilities.append((k, prob))
-    else:
-        # Default idle state if nothing is typed
-        probabilities = [(default_disease, 98.5), (list(kb["conditions"].keys())[1], 1.0), (list(kb["conditions"].keys())[2], 0.5)]
-
-    # --- RENDER STUNNING UI ---
-    
-    # 1. Primary Diagnosis Card
-    primary_key, primary_prob = probabilities[0]
-    matched_data = kb["conditions"][primary_key]
-    
-    name = matched_data.get("name", primary_key)
-    name_en_or_cn = matched_data.get("name_en", matched_data.get("name_cn", ""))
-    
-    st.markdown(f"""
-    <div class="diagnosis-card">
-        <h4 style="color: #4CAF50; margin-top: 0;">{ui['primary_dx']}</h4>
-        <h2>{name} <span style="font-size: 18px; color: #666;">({name_en_or_cn})</span></h2>
-        <p><b>{ui['icd_label']}</b> <code>{matched_data['icd10']}</code></p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # 2. Probability Progress Bars (Top 3 DDx)
-    st.markdown(f"**{ui['ddx_header']}**")
-    for dx_key, prob in probabilities:
-        dx_name = kb["conditions"][dx_key].get("name", dx_key)
-        col_dx, col_prob = st.columns([3, 1])
-        with col_dx:
-            st.markdown(f"*{dx_name}*")
-            # Convert prob to 0.0 - 1.0 for the progress bar
-            st.progress(prob / 100.0)
-        with col_prob:
-            st.markdown(f"<h3 style='text-align: right; color: #1e3c72; margin-top: -5px;'>{prob:.1f}%</h3>", unsafe_allow_html=True)
-            
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # 3. Beautiful Expanding Prescription Panels
-    st.markdown(f"### {ui['rx_header']}")
-    prescriptions = matched_data.get("处方", matched_data.get("prescriptions", {}))
-    
-    for category, drugs in prescriptions.items():
-        with st.expander(f"📌 {category.replace('_', ' ').title()}", expanded=True):
-            for item in drugs:
-                if "drug" in item or "药品" in item:
-                    d_name = item.get("drug", item.get("药品", "Unknown Drug"))
-                    d_en = item.get("英文名", item.get("drug_cn", ""))
-                    dose = item.get("dose", item.get("用法", "Standard dose"))
-                    
-                    st.markdown(f"**{d_name}** ({d_en})  \n*{dose}*")
-                    
-                    alert = item.get("alert", item.get("警示", ""))
-                    if alert: 
-                        color = "red" if "RED" in alert.upper() or "红" in alert else "orange" if "YELLOW" in alert.upper() or "黄" in alert else "green"
-                        st.markdown(f":{color}[**Safety Alert: {alert}**]")
-                    st.divider()
-                else:
-                    st.info(f"💡 {item.get('special', item.get('特殊说明', 'Intervention'))}")
-
-    st.caption(ui["disclaimer"])
+        st.caption(ui["disclaimer"])
