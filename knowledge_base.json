@@ -1,43 +1,667 @@
 {
+  "metadata": {
+    "version": "1.0.0",
+    "last_updated": "2026-07-06",
+    "region": "China HIS Compatible / 中国医院信息系统",
+    "description": "Unified Bilingual Core Dermatology Database for Clinical Decision Support Systems"
+  },
+  "global_settings": {
+    "safety_alert_levels": {
+      "RED_红色阻断": {
+        "action": "BLOCK / 阻断处方",
+        "requires_override": true,
+        "description": "Absolute contraindication - life threatening / 绝对禁忌 - 危及生命"
+      },
+      "YELLOW_黄色警示": {
+        "action": "REQUIRE_PHARMACIST_APPROVAL / 需药师审核",
+        "requires_override": false,
+        "description": "Severe interaction / 严重相互作用 - 必须药师批准"
+      },
+      "GREEN_绿色提醒": {
+        "action": "WARNING_PASS / 警告通过",
+        "requires_override": false,
+        "description": "Caution - pass with notice / 注意 - 提示后通过"
+      }
+    },
+    "icd10_search_mode": "fuzzy_chinese_english / 中英文模糊搜索",
+    "soap_template_enabled": true,
+    "auto_ddx_suggestion": true,
+    "drug_insurance_tags": [
+      "Class_A_医保甲类",
+      "Class_B_医保乙类",
+      "Self_Pay_自费"
+    ]
+  },
+  "morphology_builder": {
+    "primary_lesions": [
+      {"id": "macule", "name_zh": "斑疹", "name_en": "Macule", "description": "Flat, non-palpable, <1cm discoloration"},
+      {"id": "patch", "name_zh": "斑片", "name_en": "Patch", "description": "Flat, non-palpable, >1cm discoloration"},
+      {"id": "papule", "name_zh": "丘疹", "name_en": "Papule", "description": "Elevated, solid, <1cm"},
+      {"id": "plaque", "name_zh": "斑块", "name_en": "Plaque", "description": "Elevated, flat-topped, >1cm"},
+      {"id": "vesicle", "name_zh": "水疱", "name_en": "Vesicle", "description": "Fluid-filled, <1cm"},
+      {"id": "bulla", "name_zh": "大疱", "name_en": "Bulla", "description": "Fluid-filled, >1cm"},
+      {"id": "pustule", "name_zh": "脓疱", "name_en": "Pustule", "description": "Pus-filled, variable size"},
+      {"id": "nodule", "name_zh": "结节", "name_en": "Nodule", "description": "Solid, deep, >1cm, palpable"},
+      {"id": "ulcer", "name_zh": "溃疡", "name_en": "Ulcer", "description": "Full-thickness epidermal loss"},
+      {"id": "wheal", "name_zh": "风团", "name_en": "Wheal", "description": "Transient edematous plaque"}
+    ],
+    "secondary_lesions": [
+      {"id": "scale", "name_zh": "鳞屑", "name_en": "Scale", "description": "Accumulated flakes of stratum corneum"},
+      {"id": "crust", "name_zh": "痂", "name_en": "Crust", "description": "Dried exudate"},
+      {"id": "lichenification", "name_zh": "苔藓样变", "name_en": "Lichenification", "description": "Thickened skin with accentuated markings"}
+    ]
+  },
   "diseases": [
     {
       "id": "D001",
-      "name_zh": "特应性皮炎 (湿疹)",
-      "name_en": "Atopic Dermatitis (Eczema)",
-      "icd_10": "L20.9",
-      "typical_symptoms": ["皮肤干燥", "剧烈瘙痒", "红斑", "脱屑"],
+      "category_zh": "炎症性皮肤病",
+      "category_en": "Inflammatory",
+      "name_zh": "银屑病",
+      "name_en": "Psoriasis",
+      "icd_10": "L40.9",
+      "severity_levels": ["轻度 (Mild)", "中度 (Moderate)", "重度 (Severe)"],
+      "chief_complaint_template": "{部位/Location}红斑斑块覆银白色鳞屑{持续时间/Duration}",
+      "key_physical_findings": ["边界清楚的红斑斑块", "银白色鳞屑", "Auspitz征阳性", "薄膜现象阳性"],
+      "preferred_sites": ["伸侧", "头皮", "骶尾部", "甲 (顶针样凹陷、油滴征)", "皱褶部位"],
+      "scoring_systems": ["PASI: 0-72分", "BSA: <3%轻度, 3-10%中度, >10%重度", "DLQI: 0-30分"],
+      "differential_diagnoses": [
+        {"disease": "脂溢性皮炎 (Seborrheic Dermatitis)", "differentiator": "油腻黄色鳞屑, 屈侧分布, 边界不清"},
+        {"disease": "玫瑰糠疹 (Pityriasis Rosea)", "differentiator": "母斑, 圣诞树样分布, 自限性"},
+        {"disease": "二期梅毒疹 (Secondary Syphilis)", "differentiator": "掌跖受累, 全身症状, 血清学阳性"}
+      ],
+      "screening_labs": ["血常规", "肝肾功能", "血脂", "系统用药前筛查: 乙肝、丙肝、HIV、结核筛查、妊娠试验"],
       "trending_drugs": [
         {
-          "trade_name": "达必妥 (Dupixent)",
-          "generic_name": "度普利尤单抗",
-          "trend_status": "Highly Trending",
-          "reason": "First-line biologic targeting IL-4/IL-13, preferred for moderate-to-severe cases.",
-          "medical_insurance": "国家医保乙类 (Covered via National Insurance)"
+          "trade_name": "可善挺 (Cosentyx)",
+          "generic_name": "司库奇尤单抗 (Secukinumab)",
+          "trend_status": "Highly Trending (Severe Biologic)",
+          "reason": "IL-17A inhibitor. Gold standard for rapid and complete plaque clearance.",
+          "usage_and_dosage": "300mg SC at weeks 0, 1, 2, 3, 4, followed by 300mg every 4 weeks.",
+          "medical_insurance": "国家医保乙类 (需审批 / Class B Approval)",
+          "safety_alert": "RED / 红色阻断 (用药前必须排除活动性结核和乙肝，禁用活疫苗)"
         },
         {
-          "trade_name": "艾迪特",
-          "generic_name": "克立硼罗软膏",
-          "trend_status": "Rising",
-          "reason": "Topical non-steroidal PDE4 inhibitor, highly popular for pediatric patients.",
-          "medical_insurance": "自费/部分医保 (Partial Coverage)"
+          "trade_name": "方希 / 泰尔丝",
+          "generic_name": "阿维A胶囊 (Acitretin)",
+          "trend_status": "Stable Systemic Standard",
+          "reason": "Oral retinoid for plaque and pustular variants.",
+          "usage_and_dosage": "25mg orally once daily taken with a fatty meal.",
+          "medical_insurance": "国家医保乙类 (Class B)",
+          "safety_alert": "RED / 红色阻断 (育龄期女性停药后需严格避孕2年；每4周监测肝功、血脂)"
+        },
+        {
+          "trade_name": "三共 / 顶级外用",
+          "generic_name": "卡泊三醇倍他米松凝胶 (Calcipotriol/Betamethasone)",
+          "trend_status": "Topical Gold Standard",
+          "reason": "Synergistic vitamin D analogue and strong corticosteroid to mitigate skin atrophy.",
+          "usage_and_dosage": "Apply to affected lesion areas once daily. Max course 4 weeks.",
+          "medical_insurance": "国家医保乙类 (Class B)",
+          "safety_alert": "GREEN / 绿色提醒"
         }
-      ]
+      ],
+      "patient_education": ["每日大量保湿", "严格戒烟控酒减压", "体重管理与监测代谢综合征", "防晒霜SPF50+"]
     },
     {
       "id": "D002",
+      "category_zh": "炎症性皮肤病",
+      "category_en": "Inflammatory",
+      "name_zh": "特应性皮炎",
+      "name_en": "Atopic Dermatitis",
+      "icd_10": "L20.9",
+      "severity_levels": ["轻度 (Mild)", "中度 (Moderate)", "重度 (Severe)"],
+      "chief_complaint_template": "{年龄组}{部位}表达瘙痒性红斑丘疹, 反复发作{持续时间}",
+      "key_physical_findings": ["瘙痒为必备条件", "湿疹样变形态", "年龄特异性分布 (婴儿面颊、儿童/成人屈侧)"],
+      "scoring_systems": ["EASI: 0-72", "SCORAD: 0-103", "POEM: 0-28"],
+      "differential_diagnoses": [
+        {"disease": "接触性皮炎 (Contact Dermatitis)", "differentiator": "明确接触史, 斑贴试验阳性"},
+        {"disease": "疥疮 (Scabies)", "differentiator": "指缝隧道, 夜间瘙痒加剧, 家族聚集接触者发病"}
+      ],
+      "screening_labs": ["血常规+外周血嗜酸粒细胞", "总IgE/特异性IgE", "过敏原筛查"],
+      "trending_drugs": [
+        {
+          "trade_name": "达必妥 (Dupixent)",
+          "generic_name": "度普利尤单抗 (Dupilumab)",
+          "trend_status": "Highly Trending (First-Line Biologic)",
+          "reason": "Targets IL-4/IL-13 path. Excellent safety profile across all age brackets.",
+          "usage_and_dosage": "Initial dose 600mg SC, then 300mg subcutaneously every 2 weeks.",
+          "medical_insurance": "国家医保乙类 (需审批 / Class B Approval)",
+          "safety_alert": "YELLOW / 黄色警示 (注意监测临床结膜炎发生率)"
+        },
+        {
+          "trade_name": "普特彼",
+          "generic_name": "他克莫司软膏 0.1% (Tacrolimus)",
+          "trend_status": "Maintenance Standard",
+          "reason": "Non-steroidal topical calcineurin inhibitor. Ideal for face, neck, and long-term use.",
+          "usage_and_dosage": "Apply a thin layer to the affected areas twice daily.",
+          "medical_insurance": "国家医保乙类 (Class B)",
+          "safety_alert": "GREEN / 绿色提醒"
+        }
+      ],
+      "patient_education": ["温水洗浴(勿烫洗), 3分钟内全身厚涂医学保湿剂", "避免香精与羊毛织物", "穿纯棉宽松衣物"]
+    },
+    {
+      "id": "D003",
+      "category_zh": "炎症性皮肤病",
+      "category_en": "Inflammatory",
+      "name_zh": "接触性皮炎",
+      "name_en": "Contact Dermatitis",
+      "ic_10": "L25.9",
+      "severity_levels": ["轻度", "中度", "重度"],
+      "key_physical_findings": ["边界极清楚的红斑、水疱或大疱", "形态与接触物质完全一致"],
+      "trending_drugs": [
+        {
+          "trade_name": "炉甘石洗剂 (Calamine)",
+          "generic_name": "炉甘石洗剂",
+          "trend_status": "Acute Base (Non-Oozing)",
+          "reason": "Classic soothing and antipruritic agent for dry lesions.",
+          "usage_and_dosage": "Shake well, apply topically to affected skin 3-4 times daily.",
+          "medical_insurance": "国家医保甲类 (Class A Fully Covered)",
+          "safety_alert": "GREEN"
+        },
+        {
+          "trade_name": "3%硼酸溶液 (Boric Acid)",
+          "generic_name": "3%硼酸溶液",
+          "trend_status": "Acute Base (Oozing)",
+          "reason": "Standard astringent wet compress for weeping, acute erosive phases.",
+          "usage_and_dosage": "Cold wet compress using 4-6 layers of gauze for 15 minutes, twice daily.",
+          "medical_insurance": "国家医保甲类 (Class A)",
+          "safety_alert": "GREEN"
+        }
+      ],
+      "patient_education": ["严格查明并终身避免再次接触致敏原", "接触化学品需佩戴专用防护手套"]
+    },
+    {
+      "id": "D004",
+      "category_zh": "感染性疾病",
+      "category_en": "Infection",
+      "name_zh": "单纯疱疹",
+      "name_en": "Herpes Simplex",
+      "icd_10": "B00.1",
+      "severity_levels": ["轻度", "中度", "重度"],
+      "key_physical_findings": ["群集或簇集性水疱", "基底红晕明显", "伴剧烈灼痛", "同部位反复发作"],
+      "trending_drugs": [
+        {
+          "trade_name": "丽珠威 / 伐特威",
+          "generic_name": "盐酸伐昔洛韦 (Valacyclovir)",
+          "trend_status": "Systemic Standard",
+          "reason": "High bioavailability prodrug of acyclovir. Greatly shortens viral shedding.",
+          "usage_and_dosage": "For acute episodes: 1g orally twice daily for 7-10 days.",
+          "medical_insurance": "国家医保乙类 (Class B)",
+          "safety_alert": "GREEN"
+        }
+      ],
+      "patient_education": ["活动性排毒期内绝对避免亲吻婴儿、共用餐具或发生性接触", "加强手部卫生"]
+    },
+    {
+      "id": "D005",
+      "category_zh": "感染性疾病",
+      "category_en": "Infection",
+      "name_zh": "脓疱疮",
+      "name_en": "Impetigo",
+      "icd_10": "B08.0",
+      "severity_levels": ["轻度", "中度", "重度"],
+      "key_physical_findings": ["浅表渗出性脓疱", "典型蜜黄色痂皮覆盖", "接触性传染性极强"],
+      "trending_drugs": [
+        {
+          "trade_name": "百多邦",
+          "generic_name": "莫匹罗星软膏 2% (Mupirocin)",
+          "trend_status": "Localized First-Line Topical",
+          "reason": "Excellent activity against Gram-positive skin pathogens including Staph and Strep.",
+          "usage_and_dosage": "Apply to the crusted lesion areas topically 3 times daily for 7-10 days.",
+          "medical_insurance": "国家医保乙类 (Class B)",
+          "safety_alert": "GREEN"
+        }
+      ],
+      "patient_education": ["剪短患者指甲避免搔抓创面", "家庭内毛巾和生活用品必须完全隔离并定期煮沸消毒"]
+    },
+    {
+      "id": "D006",
+      "category_zh": "感染性疾病",
+      "category_en": "Infection",
+      "name_zh": "癣 (体癣/足癣/头癣/甲癣)",
+      "name_en": "Tinea (Dermatophytosis)",
+      "icd_10": "B35.9",
+      "severity_levels": ["轻度", "中度", "重度"],
+      "key_physical_findings": ["边缘活跃且伴有浅表鳞屑的环形损害", "向外扩张而中心自愈性消退"],
+      "trending_drugs": [
+        {
+          "trade_name": "兰美抒 (Lamisil)",
+          "generic_name": "盐酸特比萘芬片 (Terbinafine)",
+          "trend_status": "Systemic Gold Standard",
+          "reason": "Allylamine antifungal that accumulates selectively in keratinized tissue (nails/hair).",
+          "usage_and_dosage": "250mg orally once daily. Course: Fingernails 6 weeks, Toenails 12 weeks.",
+          "medical_insurance": "国家医保乙类 (Class B)",
+          "safety_alert": "YELLOW / 黄色警示 (治疗前及给药期间每月必须常规复查肝功能/LFT)"
+        }
+      ],
+      "patient_education": ["保持患处绝对干燥通风", "勤换洗鞋袜", "不要共用洗脚盆和擦脚毛巾"]
+    },
+    {
+      "id": "D007",
+      "category_zh": "感染性疾病",
+      "category_en": "Infection",
+      "name_zh": "毛囊炎",
+      "name_en": "Folliculitis",
+      "icd_10": "L66.2",
+      "trending_drugs": [
+        {
+          "trade_name": "采乐 / 仁和",
+          "generic_name": "酮康唑洗剂 (Ketoconazole Shampoo)",
+          "trend_status": "First Line Malassezia Variant",
+          "reason": "Anti-lipophilic yeast efficacy for pityrosporum variants on trunk and scalp.",
+          "usage_and_dosage": "Apply to target skin, lather, leave on for 5 minutes before rinsing. 3x/week.",
+          "medical_insurance": "国家医保乙类 (Class B)",
+          "safety_alert": "GREEN"
+        }
+      ],
+      "patient_education": ["拒绝紧身或不透气衣物", "剧烈出汗后应立即淋浴清洁"]
+    },
+    {
+      "id": "D008",
+      "category_zh": "痤疮样疾病",
+      "category_en": "Acneiform",
       "name_zh": "寻常痤疮",
       "name_en": "Acne Vulgaris",
       "icd_10": "L70.0",
-      "typical_symptoms": ["粉刺", "丘疹", "脓疱", "皮脂溢出"],
+      "severity_levels": ["轻度 (粉刺)", "中度 (丘疹脓疱)", "重度 (结节囊肿)", "极重度 (融合瘢痕)"],
+      "key_physical_findings": ["开放性/闭合性粉刺", "炎性丘疹", "深在结节或囊肿", "皮脂溢出明显"],
       "trending_drugs": [
         {
+          "trade_name": "泰尔丝 / 异维A",
+          "generic_name": "异维A酸软胶囊 (Isotretinoin)",
+          "trend_status": "Absolute Heavyweight Rx",
+          "reason": "The only internal drug targeting all 4 path-mechanisms of severe nodulocystic acne.",
+          "usage_and_dosage": "0.25-0.5mg/kg/day orally split BID, taken strictly with fatty meals.",
+          "medical_insurance": "国家医保乙类 (Class B)",
+          "safety_alert": "RED / 红色阻断 (极高致畸风险！签署知情同意书，实行双重避孕，每月必查妊娠试验与血脂)"
+        },
+        {
           "trade_name": "达芙文 (Differin)",
-          "generic_name": "阿达帕林凝胶",
-          "trend_status": "Stable Standard",
-          "reason": "Gold standard topical retinoid for comedonal acne.",
-          "medical_insurance": "国家医保甲类 (Fully Covered)"
+          "generic_name": "阿达帕林凝胶 0.1% (Adapalene)",
+          "trend_status": "Topical Maintenance Gold Standard",
+          "reason": "Third-generation topical retinoid. Normalizes follicular keratinization with low irritation.",
+          "usage_and_dosage": "Apply a pea-sized amount to clean skin once daily exclusively in the evening (QN).",
+          "medical_insurance": "国家医保乙类 (Class B)",
+          "safety_alert": "GREEN / 绿色提醒 (指导建立耐受: 初始每周2-3次，局部建立避光保护)"
         }
-      ]
+      ],
+      "patient_education": ["选择非致痘性(Non-comedogenic)温和洁面", "绝对不要自行暴力挤压皮损以防遗留萎缩性或增生性瘢痕"]
+    },
+    {
+      "id": "D009",
+      "category_zh": "痤疮样疾病",
+      "category_en": "Acneiform",
+      "name_zh": "玫瑰痤疮",
+      "name_en": "Rosacea",
+      "icd_10": "L71.9",
+      "subtypes": ["红斑毛细血管扩张型 (ETR)", "丘疹脓疱型 (PPR)", "肥大期 (PhR)", "眼型 (Ocular)"],
+      "key_physical_findings": ["面中部面颊区持久性、阵发性红斑", "显著毛细血管扩张", "无粉刺形成的丘疹脓疱"],
+      "trending_drugs": [
+        {
+          "trade_name": "舒坦罗 (Soolantra)",
+          "generic_name": "伊维菌素乳膏 1% (Ivermectin)",
+          "trend_status": "Highly Trending (PPR Choice)",
+          "reason": "Dual action: powerful anti-inflammatory and targets Demodex folliculorum mites.",
+          "usage_and_dosage": "Apply a thin layer to facial zones once daily at night. Continuous course 12 weeks.",
+          "medical_insurance": "国家医保乙类 (Class B)",
+          "safety_alert": "GREEN"
+        },
+        {
+          "trade_name": "芙美松",
+          "generic_name": "溴莫尼定凝胶 0.5% (Brimonidine)",
+          "trend_status": "Trending ETR Vasoconstrictor",
+          "reason": "Highly selective alpha-2 adrenergic agonist. Temporarily clears background erythema.",
+          "usage_and_dosage": "Apply a tiny amount to face once daily in the morning.",
+          "medical_insurance": "国家医保乙类 (Class B)",
+          "safety_alert": "GREEN"
+        }
+      ],
+      "patient_education": ["严格避开物理诱因: 极端高热环境(如火锅、桑拿)、酒精、辛辣食物、紫外线烈日暴露", "精简护肤修护屏障"]
+    },
+    {
+      "id": "D010",
+      "category_zh": "痤疮样疾病",
+      "category_en": "Acneiform",
+      "name_zh": "鼻赘",
+      "name_en": "Rhinophyma",
+      "icd_10": "L71.1",
+      "key_physical_findings": ["鼻部组织结节状肥大增生", "巨大皮脂腺开口与严重变形"],
+      "trending_drugs": [
+        {
+          "trade_name": "二氧化碳激光磨削 (CO2)",
+          "generic_name": "CO2 Laser Ablation / Surgical Shaping",
+          "trend_status": "Interventional Standard",
+          "reason": "Medical topicals are mostly ineffective. Laser sculpting or electrosurgical excision is the choice.",
+          "usage_and_dosage": "Surgical outpatient procedure under local block.",
+          "medical_insurance": "自费 (Self-Pay)",
+          "safety_alert": "GREEN"
+        }
+      ],
+      "patient_education": ["早期积极控治玫瑰痤疮是预防本病恶化肥大的唯一有效手段"]
+    },
+    {
+      "id": "D011",
+      "category_zh": "色素性损害",
+      "category_en": "Pigmented",
+      "name_zh": "黑素细胞痣",
+      "name_en": "Melanocytic Nevus",
+      "icd_10": "D22.9",
+      "key_physical_findings": ["几何结构完全对称", "边界清晰规则", "颜色均匀稳定", "直径小于6mm"],
+      "trending_drugs": [
+        {
+          "trade_name": "完整手术切除 (Excision)",
+          "generic_name": "Surgical Complete Excision",
+          "trend_status": "Clinical Safety Rule",
+          "reason": "High risk of incomplete clearing with alternative options.",
+          "usage_and_dosage": "Excision with 1-2mm clinical margins followed by routine histopathology.",
+          "medical_insurance": "自费 (Self-Pay / 部分支持)",
+          "safety_alert": "RED / 红色阻断 (临床铁律: 严禁对色素性损害进行非正规美容药水点痣、冷冻或盲目激光！必须送病理检查)"
+        }
+      ],
+      "patient_education": ["日常严格实施物理防晒", "遵循ABCDE法则进行每月自我随访监测"]
+    },
+    {
+      "id": "D012",
+      "category_zh": "色素性损害",
+      "category_en": "Pigmented",
+      "name_zh": "黑色素瘤",
+      "name_en": "Melanoma",
+      "icd_10": "C43.9",
+      "key_physical_findings": ["皮损结构极不对称", "边缘锯齿状模糊不清", "色彩杂乱多色", "直径大于6mm", "演进极快 (丑小鸭征)"],
+      "screening_labs": ["Breslow厚度 (HIS必填项)", "Clark分级", "LDH", "基因突变检测 (BRAF/NRAS/cKIT)"],
+      "trending_drugs": [
+        {
+          "trade_name": "可瑞达 (Keytruda)",
+          "generic_name": "帕博利珠单抗 (Pembrolizumab)",
+          "trend_status": "Highly Trending (Advanced Oncology)",
+          "reason": "Anti-PD-1 immunotherapy. Dramatically improves relapse-free survival in advanced stages.",
+          "usage_and_dosage": "200mg IV infusion intravenously every 3 weeks.",
+          "medical_insurance": "国家医保乙类 (需特批审批 / Class B)",
+          "safety_alert": "RED / 红色阻断 (需在专科肿瘤监护下实施给药)"
+        }
+      ],
+      "patient_education": ["恶性度极高，必须终身高度随访，家族近亲属推荐同步进行全面皮肤镜排查"]
+    },
+    {
+      "id": "D013",
+      "category_zh": "诊断工具",
+      "category_en": "Diagnostic Tool",
+      "name_zh": "ABCDE法则",
+      "name_en": "ABCDE Rule",
+      "icd_10": "DIAG_TOOL",
+      "description": "A: Asymmetry (不对称) | B: Border (边界不规则) | C: Color (多样混杂) | D: Diameter (>6mm) | E: Evolution (动态演进变化)",
+      "risk_interpretation": "0-1项异常: 低风险常规随访; 2项异常: 中风险密切拍照追踪; 3项及以上: 强烈怀疑恶变，启动活检。"
+    },
+    {
+      "id": "D014",
+      "category_zh": "诊断工具",
+      "category_en": "Diagnostic Tool",
+      "name_zh": "丑小鸭征",
+      "name_en": "Ugly Duckling Sign",
+      "icd_10": "DIAG_TOOL",
+      "description": "A single pigmented lesion that presents a completely distinct morphologic pattern compared to all other background nevi on the patient's body.",
+      "clinical_importance": "Warrants immediate clinical biopsy or dermoscopic review even if it does not strictly violate the text-book ABCDE rules."
+    },
+    {
+      "id": "D015",
+      "category_zh": "皮肤癌",
+      "category_en": "Skin Cancer",
+      "name_zh": "基底细胞癌",
+      "name_en": "Basal Cell Carcinoma",
+      "icd_10": "C44.91",
+      "key_physical_findings": ["半透明结节伴特征性毛细血管扩张", "典型鼠咬状溃疡", "珍珠样隆起卷边"],
+      "trending_drugs": [
+        {
+          "trade_name": "莫氏显微手术 (Mohs)",
+          "generic_name": "Mohs Micrographic Surgery",
+          "trend_status": "Surgical Surgical Gold Standard",
+          "reason": "Maximizes tissue sparing while guaranteeing 100% margin clearance in high-risk facial zones.",
+          "usage_and_dosage": "Intraoperative frozen-section controlled horizontal layer excision.",
+          "medical_insurance": "国家医保乙类 (Class B)",
+          "safety_alert": "GREEN"
+        },
+        {
+          "trade_name": "睿妥 (Erivedge)",
+          "generic_name": "维莫德吉 (Vismodegib)",
+          "trend_status": "Targeted Choice (Advanced)",
+          "reason": "First-in-class small molecule Hedgehog pathway inhibitor for locally advanced or inoperable BCC.",
+          "usage_and_dosage": "150mg orally once daily continuous.",
+          "medical_insurance": "国家医保乙类 (需特批 / Class B)",
+          "safety_alert": "RED / 红色阻断"
+        }
+      ],
+      "patient_education": ["本病基本不发生远端脏器转移，早期切除预后极佳", "切勿因无痛而长期忽视任其扩大破坏骨骼组织"]
+    },
+    {
+      "id": "D016",
+      "category_zh": "皮肤癌",
+      "category_en": "Skin Cancer",
+      "name_zh": "鳞状细胞癌",
+      "name_en": "Squamous Cell Carcinoma",
+      "icd_10": "C44.92",
+      "risk_factors": ["慢性长期日光暴晒", "免疫抑制患者", "陈旧性烧伤瘢痕及慢性溃疡不愈创面"],
+      "key_physical_findings": ["质地坚硬的红色硬结", "表面覆盖厚重且粘着紧密的角化性鳞屑痂", "常伴破溃"],
+      "trending_drugs": [
+        {
+          "trade_name": "达必妥/拓益类似物",
+          "generic_name": "西米普利单抗 (Cemiplimab)",
+          "trend_status": "Highly Trending Immunotherapy",
+          "reason": "PD-1 inhibitor block tailored and approved specifically for locally advanced/metastatic cutaneous SCC.",
+          "usage_and_dosage": "350mg IV intravenous infusion once every 3 weeks.",
+          "medical_insurance": "国家医保乙类 (需审批 / Class B)",
+          "safety_alert": "RED"
+        }
+      ],
+      "patient_education": ["相较于BCC，其具有显著更高的区域淋巴结和远端血行转移潜能", "高危患者需定期加做局部淋巴结超声筛查"]
+    },
+    {
+      "id": "D017",
+      "category_zh": "皮肤癌",
+      "category_en": "Skin Cancer",
+      "name_zh": "光化性角化病",
+      "name_en": "Actinic Keratosis",
+      "icd_10": "L57.0",
+      "description": "Precancerous lesion. Annual risk of transformation into malignant squamous cell carcinoma is estimated at 0.1% to 10% per lesion.",
+      "key_physical_findings": ["粗糙、红斑性丘疹", "表面带有极具粘着的粗糙鳞屑", "触摸时呈砂纸样独特的粗糙感"],
+      "trending_drugs": [
+        {
+          "trade_name": "丽点软膏",
+          "generic_name": "5-氟尿嘧啶乳膏 5% (5-FU)",
+          "trend_status": "Field Cancerization Standard",
+          "reason": "Topical antimetabolite. Eradicates sub-clinical sub-dermal neoplastic atypical fields.",
+          "usage_and_dosage": "Apply topically BID twice daily for a tight course of 2-4 weeks.",
+          "medical_insurance": "国家医保甲类 (Class A)",
+          "safety_alert": "YELLOW / 黄色警示 (提前告诫患者用药中后期皮损区会出现严重极具冲击性的红肿炎症排毒反应)"
+        }
+      ],
+      "patient_education": ["场癌化(Field Cancerization)概念讲解", "必须终身全面涂抹防晒霜阻断紫外线"]
+    },
+    {
+      "id": "D018",
+      "category_zh": "皮肤癌",
+      "category_en": "Skin Cancer",
+      "name_zh": "角化棘皮瘤",
+      "name_en": "Keratoacanthoma",
+      "icd_10": "L85.8",
+      "key_physical_findings": ["数周内极为快速生长的圆顶形孤立结节", "中央呈火山口样深度凹陷并塞满坚硬角栓"],
+      "trending_drugs": [
+        {
+          "trade_name": "皮损内注射",
+          "generic_name": "甲氨蝶呤皮损内注射 (Intralesional MTX)",
+          "trend_status": "Non-Surgical Alternative",
+          "reason": "Highly effective chemotherapeutic ablation reserved specifically for non-surgical candidates or giant lesions.",
+          "usage_and_dosage": "12.5mg - 25mg injected directly into the tumor base once weekly for 2-4 sessions.",
+          "medical_insurance": "国家医保甲类 (Class A Drug used Off-Label)",
+          "safety_alert": "RED"
+        }
+      ],
+      "patient_education": ["虽然该实体具备生物学自我消退的可能，但因组织学极难与高分化SCC彻底剥离，临床首选彻底切除"]
+    },
+    {
+      "id": "D011",
+      "category_zh": "大疱性疾病",
+      "category_en": "Bullous",
+      "name_zh": "寻常型天疱疮",
+      "name_en": "Pemphigus Vulgaris",
+      "icd_10": "L10.0",
+      "key_physical_findings": ["极易破溃的松弛性表皮内大疱", "全身广泛性痛苦剧烈糜烂面", "尼氏征(Nikolsky)绝对阳性", "几近100%首发累及口腔黏膜"],
+      "trending_drugs": [
+        {
+          "trade_name": "美罗华 (MabThera)",
+          "generic_name": "利妥昔单抗 (Rituximab)",
+          "trend_status": "Highly Trending (New First-Line)",
+          "reason": "Anti-CD20 monoclonal antibody. Rapidly depletes pathogenic B-cell clones producing anti-Dsg1/Dsg3 autoantibodies.",
+          "usage_and_dosage": "1g IV infusion on Day 1 and Day 15, repeated safely at the 6-month window.",
+          "medical_insurance": "国家医保乙类 (需特批审批 / Class B)",
+          "safety_alert": "RED / 红色阻断 (极高输注反应及免疫全面抑制风险)"
+        },
+        {
+          "trade_name": "信谊 / 新华",
+          "generic_name": "醋酸泼尼松片 (Prednisone)",
+          "trend_status": "Traditional Classical Core Systemic",
+          "reason": "Mainstay immune suppression to arrest active blistering.",
+          "usage_and_dosage": "High dose: 0.5 - 1.0 mg/kg/day orally as baseline baseline induction.",
+          "medical_insurance": "国家医保甲类 (Class A)",
+          "safety_alert": "YELLOW / 黄色警示 (必须同步进行严格的骨质疏松防治、血糖控制与血压日常监测)"
+        }
+      ],
+      "patient_education": ["此为潜在严重危及生命的重症自体免疫性皮肤病", "黏膜糜烂期间需用生理盐水及氯己定含漱液进行细致口护"]
+    },
+    {
+      "id": "D020",
+      "category_zh": "大疱性疾病",
+      "category_en": "Bullous",
+      "name_zh": "大疱性类天疱疮",
+      "name_en": "Bullous Pemphigoid",
+      "icd_10": "L12.0",
+      "key_physical_findings": ["墙壁般紧张不易破的表皮下大疱", "极具特征的环形荨麻疹样剧痒斑块底座", "尼氏征(Nikolsky)显性阴性", "多发于高龄老年群体"],
+      "trending_drugs": [
+        {
+          "trade_name": "超强效外用激素",
+          "generic_name": "丙酸氯倍他索乳膏 (Clobetasol Propionate)",
+          "trend_status": "Highly Trending (First-Line Alternative)",
+          "reason": "Large-scale clinical trials prove whole-body superpotent topicals match oral steroids in efficacy but slash mortality from systemic sepsis.",
+          "usage_and_dosage": "Apply BID to the entire body skin lesions (tapering down gradually).",
+          "medical_insurance": "国家医保乙类 (Class B)",
+          "safety_alert": "Class B Support"
+        }
+      ],
+      "patient_education": ["本病相较于天疱疮预后更为缓和良好", "部分病例关联潜在神经系统退行性疾病(阿尔茨海默、帕金森病)，翻身需防跌倒骨折"]
+    },
+    {
+      "id": "D021",
+      "category_zh": "诊断工具",
+      "category_en": "Diagnostic Tool",
+      "name_zh": "尼氏征",
+      "name_en": "Nikolsky Sign",
+      "icd_10": "DIAG_TOOL",
+      "description": "Diagnostic maneuver where gentle lateral mechanical friction applied with a thumb onto adjacent normal-looking skin or a blister margin triggers sheets of epidermal detachment or expands the blister sideways.",
+      "clinical_importance": "POSITIVE indicates intra-epidermal breakdown (e.g., Pemphigus Vulgaris, SJS/TEN). NEGATIVE rules it out and confirms sub-epidermal cleavage spaces (e.g., Bullous Pemphigoid)."
+    },
+    {
+      "id": "D022",
+      "category_zh": "药疹",
+      "category_en": "Drug Eruption",
+      "name_zh": "麻疹样药疹",
+      "name_en": "Morbilliform Drug Eruption",
+      "icd_10": "L27.0",
+      "key_physical_findings": ["全身呈高度对称性分布的红斑性斑丘疹", "常在躯干区融合成片", "常在用药诱发暴露后1-2周内爆发"],
+      "common_culprits": ["青霉素类/抗生素", "磺胺类", "NSAID非甾体抗炎药", "中药注射剂"],
+      "trending_drugs": [
+        {
+          "trade_name": "立即全面停药",
+          "generic_name": "Immediate Offending Drug Discontinuation",
+          "trend_status": "Absolute Priority Action",
+          "reason": "Halting the causative antigenic drug input is the single most critical interventional variable.",
+          "usage_and_dosage": "Cease all suspicious ongoing systemic exposures immediately.",
+          "medical_insurance": "Class_A_Free",
+          "safety_alert": "RED"
+        }
+      ],
+      "patient_education": ["详细记录涉事药物通用名", "就诊时主动向接诊医护展示记录卡，防止发生交叉过敏"]
+    },
+    {
+      "id": "D023",
+      "category_zh": "药疹",
+      "category_en": "Drug Eruption",
+      "name_zh": "固定性药疹",
+      "name_en": "Fixed Drug Eruption",
+      "icd_10": "L27.1",
+      "key_physical_findings": ["每次服药后必定在同一完全相同的解剖部位反复爆发", "边界轮廓极清的暗紫红色椭圆斑片", "消退后遗留经年不退的深褐色显著色素沉着", "极其好发于黏膜皮肤交界处 (如口唇、生殖器区)"],
+      "trending_drugs": [
+        {
+          "trade_name": "新华 / 激素",
+          "generic_name": "中强效外用糖皮质激素 (Topical Steroids)",
+          "trend_status": "Standard Focal Therapy",
+          "reason": "Suppresses local cytotoxic T-cell hyper-activation inside the permanent localized skin zone.",
+          "usage_and_dosage": "Apply topically BID onto the localized red patch for 1-2 weeks.",
+          "medical_insurance": "国家医保乙类 (Class B)",
+          "safety_alert": "GREEN"
+        }
+      ],
+      "patient_education": ["该皮损具有定点复发的生物学特性", "必须将引发该特定过敏的药名永久性录入HIS系统后台数据库中阻断"]
+    },
+    {
+      "id": "D024",
+      "category_zh": "药疹",
+      "category_en": "Drug Eruption",
+      "name_zh": "荨麻疹型药疹",
+      "name_en": "Urticaria (Drug-Induced)",
+      "icd_10": "L50.9",
+      "trending_drugs": [
+        {
+          "trade_name": "开瑞坦 / 开思亭",
+          "generic_name": "氯雷他定片 (Loratadine) / 西替利嗪 (Cetirizine)",
+          "trend_status": "Standard Core H1 Antihistamine",
+          "reason": "Blocks H1 histamine receptors to settle total-body wheals.",
+          "usage_and_dosage": "10mg orally once daily. (Can safely scale up to BID or double dosage if required under guidance).",
+          "medical_insurance": "国家医保甲类 (Class A)",
+          "safety_alert": "GREEN"
+        }
+      ],
+      "patient_education": ["密切注意呼吸系统体征", "如突发胸闷、声音嘶哑、喉头水肿或心慌气短，必须即刻送往急诊救治以防发生休克"]
+    },
+    {
+      "id": "D025",
+      "category_zh": "药疹",
+      "category_en": "Drug Eruption",
+      "name_zh": "SJS/TEN (Stevens-Johnson综合征/中毒性表皮坏死松解症)",
+      "name_en": "Stevens-Johnson Syndrome / Toxic Epidermal Necrolysis",
+      "icd_10": "L51.1 / L51.2",
+      "description": "High-risk, dermatological emergency carrying lethal multi-organ failure risk. Classification: SJS (<10% Body Surface Area detachment), SJS-TEN overlap (10-30% BSA), TEN (>30% BSA).",
+      "scoring_systems": ["SCORTEN Scoring System (Predicts clinical mortality rates from 3% to >90% based on age, urea, malignancy, glucose, and heart rate)"],
+      "key_physical_findings": ["大面积、广泛性全身剥脱性大疱", "全层表皮松解坏死坏死剥离", "尼氏征(Nikolsky)高度强阳性", "同时合并2处及以上严重黏膜溃烂糜烂(眼结膜、尿道、口腔)"],
+      "common_culprits": ["别嘌醇 (中国人存在极高的 HLA-B*5801 基因变异易感风险！)", "卡马西平/抗癫痫药", "磺胺类抗生素", "重度NSAID"],
+      "trending_drugs": [
+        {
+          "trade_name": "特级重症监护",
+          "generic_name": "Burn ICU Admission & Fluid Resuscitation",
+          "trend_status": "Critical Standard",
+          "reason": "Massive fluid and electrolyte loss from skin denudation requires specialized barrier care using Parkland-derived formulas.",
+          "usage_and_dosage": "Immediate admission to Burn Unit/ICU. Active protective sterile air suspension.",
+          "medical_insurance": "国家医保全面覆盖 (Class A Emergency System Support)",
+          "safety_alert": "RED"
+        },
+        {
+          "trade_name": "蓉生 / 卫材",
+          "generic_name": "静脉注射用丙种球蛋白 (IVIG)",
+          "trend_status": "Systemic Rescue Option",
+          "reason": "Contains high concentration of neutralizing antibodies to block Fas-FasL mediated keratinocyte apoptosis cascades.",
+          "usage_and_dosage": "High dose rescue: 0.5 - 1.0 g/kg/day intravenously divided over 3-5 consecutive days.",
+          "medical_insurance": "国家医保乙类 (需特批特案核准 / Class B)",
+          "safety_alert": "YELLOW / 黄色警示"
+        },
+        {
+          "trade_name": "新赛斯平",
+          "generic_name": "环孢素注射液 / 口服 (Cyclosporine)",
+          "trend_status": "Emerging Targeted Rescue",
+          "reason": "Strong, fast-acting inhibitor of T-cell mediated cytotoxicity. Robust clinical data supports superior survival benefit over standard options.",
+          "usage_and_dosage": "3mg/kg/day split into twice daily systemic delivery schedules.",
+          "medical_insurance": "国家医保乙类 (Class B)",
+          "safety_alert": "YELLOW"
+        }
+      ],
+      "patient_education": ["**强制性临床预警:** 强烈建议任何中国患者在使用别嘌醇前，必须强制常规筛查 **`HLA-B*5801`** 易感位点！", "终身建立涉事过敏物黑名单，眼结膜受累者需在愈后长期追踪眼科，严防发生睑球粘连失明。"]
     }
   ]
 }
