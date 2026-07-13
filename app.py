@@ -1,19 +1,16 @@
-import streamlit as st
-from google import genai
-
-# ... [API Key Setup Code] ...
-
-# 1. Print the success message
-st.success("AI Client initialized successfully!")
-
-# 2. Add a divider so it looks clean
-st.markdown("---")
-
-# 3. Add your inputs BELOW the success message
-symptoms = st.text_area("Enter Patient Symptoms", placeholder="Describe the rash...")
-uploaded_image = st.file_uploader("Upload Lesion Image", type=["jpg", "png"])
-
-# 4. Add the button
 if st.button("Run Comprehensive AI Analysis"):
-    st.write("Processing diagnosis...")
-    # ... [Your AI analysis logic goes here] ...
+    if not symptoms and not uploaded_image:
+        st.warning("Please provide symptoms or an image.")
+    else:
+        try:
+            with st.spinner('AI is analyzing the clinical data...'):
+                # Force a timeout check and clear error handling
+                response = client.models.generate_content(
+                    model="gemini-2.0-flash", # Use the latest stable model
+                    contents=f"Analyze these symptoms: {symptoms}"
+                )
+                st.write("### Diagnostic Result:")
+                st.write(response.text)
+        except Exception as e:
+            st.error(f"Analysis failed: {e}")
+            st.write("Check your logs in 'Manage app' for specific connectivity errors.")
