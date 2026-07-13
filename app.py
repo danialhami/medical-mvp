@@ -52,12 +52,13 @@ if language == "中文 (Chinese)":
     ui = {
         "title": "智能医生辅助诊断系统",
         "subtitle": "⚡ 极速离线引擎 | 实时概率分析",
-        "input_header": "📋 临床输入 (实时监测)",
+        "input_header": "📋 临床输入",
         "symptoms_label": "输入患者症状 / 临床观察",
-        "symptoms_placeholder": "在此输入症状，系统将实时进行疾病预测...",
+        "symptoms_placeholder": "在此输入症状...",
+        "button": "🔍 运行智能分析",
         "upload_label": "📷 上传皮损图像",
         "output_header": "🤖 实时诊断与概率分析",
-        "waiting_msg": "⏳ 等待临床输入...<br><span style='font-size:14px;'>请在左侧输入症状，系统将自动进行实时鉴别诊断。</span>",
+        "waiting_msg": "⏳ 等待临床输入...<br><span style='font-size:14px;'>请在左侧输入症状并点击分析按钮，系统将自动进行鉴别诊断。</span>",
         "primary_dx": "首选诊断 (Primary Diagnosis)",
         "confidence": "置信度:",
         "ddx_header": "📊 鉴别诊断概率 (Top 3 DDx)",
@@ -70,12 +71,13 @@ else:
     ui = {
         "title": "AI Doctor Co-Pilot System",
         "subtitle": "⚡ Zero-Latency Offline Engine | Real-Time Probabilities",
-        "input_header": "📋 Clinical Input (Real-Time)",
+        "input_header": "📋 Clinical Input",
         "symptoms_label": "Enter Patient Symptoms / Clinical Observations",
-        "symptoms_placeholder": "Start typing symptoms here for instant predictions...",
+        "symptoms_placeholder": "Type symptoms here...",
+        "button": "🔍 Analyze Symptoms",
         "upload_label": "📷 Upload Lesion Image",
         "output_header": "🤖 Real-Time Diagnostic Insights",
-        "waiting_msg": "⏳ Awaiting clinical data...<br><span style='font-size:14px;'>Start typing symptoms on the left to trigger real-time differential diagnosis.</span>",
+        "waiting_msg": "⏳ Awaiting clinical data...<br><span style='font-size:14px;'>Enter symptoms on the left and click Analyze to trigger the differential diagnosis.</span>",
         "primary_dx": "Primary Diagnosis",
         "confidence": "Confidence:",
         "ddx_header": "📊 Differential Diagnosis Probabilities (Top 3)",
@@ -106,8 +108,12 @@ col1, spacer, col2 = st.columns([1.2, 0.1, 1.5])
 
 with col1:
     st.markdown(f"### {ui['input_header']}")
-    # Real-time text area
-    symptoms = st.text_area(ui["symptoms_label"], placeholder=ui["symptoms_placeholder"], height=200)
+    symptoms = st.text_area(ui["symptoms_label"], placeholder=ui["symptoms_placeholder"], height=160)
+    
+    # The Magic Trigger Button: Clicking this forces the text box to save and updates the UI
+    st.button(ui["button"], type="primary", use_container_width=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True) # spacer
     uploaded_image = st.file_uploader(ui["upload_label"], type=["jpg", "jpeg", "png"])
     
     if uploaded_image:
@@ -116,7 +122,6 @@ with col1:
 with col2:
     st.markdown(f"### {ui['output_header']}")
     
-    # Check if there is actual input before running the math engine
     if not symptoms.strip():
         # Display the beautiful waiting state
         st.markdown(f"""
@@ -166,7 +171,6 @@ with col2:
                 prob = (v / top_total_score) * 100
                 probabilities.append((k, prob))
         else:
-            # If they typed random letters that don't match anything, default safely
             default_key = list(kb["conditions"].keys())[0]
             probabilities = [(default_key, 98.5), (list(kb["conditions"].keys())[1], 1.0), (list(kb["conditions"].keys())[2], 0.5)]
 
