@@ -112,6 +112,21 @@ kb = load_knowledge_base(db_file)
 dataset = kb.get("conditions", kb)
 disease_keys = [k for k in dataset.keys() if k not in ["metadata", "global_settings", "morphology_builder"]]
 
+# Helper function to reliably extract Chinese and English names across all JSON schemas
+def get_bilingual_names(data_dict, key, current_lang):
+    # If using the new EBM schema
+    if "ChineseName" in data_dict or "EnglishName" in data_dict:
+        return data_dict.get("ChineseName", key), data_dict.get("EnglishName", key)
+    
+    # If using the original schemas
+    if current_lang == "中文 (Chinese)":
+        # In CN database, 'name' is Chinese, 'name_en' is English
+        return data_dict.get("name", key), data_dict.get("name_en", key)
+    else:
+        # In EN database, 'name_cn' is Chinese, 'name' is English
+        return data_dict.get("name_cn", key), data_dict.get("name", key)
+
+
 # 4. Main Layout
 st.markdown(f"<h1 class='header-gradient'>🏥 {ui['title']}</h1>", unsafe_allow_html=True)
 st.caption(ui["subtitle"])
@@ -193,9 +208,8 @@ with col2:
         primary_key, primary_prob = probabilities[0]
         matched_data = dataset[primary_key]
         
-        # Extract both languages securely
-        name_cn = matched_data.get("ChineseName", matched_data.get("name_cn", matched_data.get("name", primary_key)))
-        name_en = matched_data.get("EnglishName", matched_data.get("name_en", "English name unavailable"))
+        # Safely extract names using the new helper function
+        name_cn, name_en = get_bilingual_names(matched_data, primary_key, language)
         icd = matched_data.get("ICD10", matched_data.get("icd10", "Unknown"))
         
         # Determine which language is primary vs secondary for the UI
@@ -222,8 +236,9 @@ with col2:
         
         for dx_key, prob in probabilities:
             dx_data = dataset[dx_key]
-            dx_cn = dx_data.get("ChineseName", dx_data.get("name_cn", dx_data.get("name", dx_key)))
-            dx_en = dx_data.get("EnglishName", dx_data.get("name_en", ""))
+            
+            # Use helper function for DDx list too
+            dx_cn, dx_en = get_bilingual_names(dx_data, dx_key, language)
             
             if language == "中文 (Chinese)":
                 dx_display_main = dx_cn
