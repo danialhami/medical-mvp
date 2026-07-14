@@ -1,17 +1,14 @@
 import streamlit as st
 import json
 
-# 1. Set up Page Config & Custom CSS for a "Stunning" UI
+# 1. Set up Page Config & Custom CSS
 st.set_page_config(page_title="AI Doctor Co-Pilot", layout="wide", page_icon="🏥")
 
 st.markdown("""
     <style>
-    /* Modern minimalist theme */
     .main { background-color: #f8f9fc; }
     .stTextArea textarea { border-radius: 10px; border: 1px solid #e0e4f1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     .css-1d391kg { padding-top: 2rem; }
-    
-    /* Custom Card Styling */
     .diagnosis-card {
         background: linear-gradient(135deg, #ffffff 0%, #f1f4f9 100%);
         padding: 20px;
@@ -26,11 +23,7 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
         font-weight: 800;
     }
-    
-    /* Clean up the file uploader */
     .stFileUploader { border-radius: 10px; background-color: white; padding: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    
-    /* Waiting state styling */
     .waiting-state {
         text-align: center;
         padding: 50px 20px;
@@ -40,10 +33,18 @@ st.markdown("""
         border: 2px dashed #e0e4f1;
         margin-top: 20px;
     }
+    .ebm-tag {
+        background-color: #e3f2fd;
+        color: #1565c0;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# 2. Bilingual Setup: Language Toggle
+# 2. Bilingual Setup
 col_lang1, col_lang2 = st.columns([5, 1])
 with col_lang2:
     language = st.radio("Language / 语言", ["中文 (Chinese)", "English"], horizontal=True, label_visibility="collapsed")
@@ -51,39 +52,41 @@ with col_lang2:
 if language == "中文 (Chinese)":
     ui = {
         "title": "智能医生辅助诊断系统",
-        "subtitle": "⚡ 极速离线引擎 | 实时概率分析",
+        "subtitle": "⚡ 循证医学 (EBM) 离线引擎 | 实时概率分析",
         "input_header": "📋 临床输入",
         "symptoms_label": "输入患者症状 / 临床观察",
         "symptoms_placeholder": "在此输入症状...",
         "button": "🔍 运行智能分析",
         "upload_label": "📷 上传皮损图像",
-        "output_header": "🤖 实时诊断与概率分析",
-        "waiting_msg": "⏳ 等待临床输入...<br><span style='font-size:14px;'>请在左侧输入症状并点击分析按钮，系统将自动进行鉴别诊断。</span>",
+        "output_header": "🤖 实时诊断与循证决策",
+        "waiting_msg": "⏳ 等待临床输入...<br><span style='font-size:14px;'>请在左侧输入症状并点击分析按钮。</span>",
         "primary_dx": "首选诊断 (Primary Diagnosis)",
-        "confidence": "置信度:",
         "ddx_header": "📊 鉴别诊断概率 (Top 3 DDx)",
         "icd_label": "ICD-10 编码:",
         "rx_header": "💊 推荐处方与干预方案",
+        "special_pop": "👨‍👩‍👧 特殊人群用药指南",
+        "guidelines": "📚 临床指南与循证文献",
         "disclaimer": "⚠️ 仅供医疗专业人员参考。最终决定需由执业医师确认。"
     }
     db_file = "dermatology_core_data_CN.json"
 else:
     ui = {
         "title": "AI Doctor Co-Pilot System",
-        "subtitle": "⚡ Zero-Latency Offline Engine | Real-Time Probabilities",
+        "subtitle": "⚡ Evidence-Based Medicine (EBM) Engine | Offline Mode",
         "input_header": "📋 Clinical Input",
         "symptoms_label": "Enter Patient Symptoms / Clinical Observations",
         "symptoms_placeholder": "Type symptoms here...",
         "button": "🔍 Analyze Symptoms",
         "upload_label": "📷 Upload Lesion Image",
         "output_header": "🤖 Real-Time Diagnostic Insights",
-        "waiting_msg": "⏳ Awaiting clinical data...<br><span style='font-size:14px;'>Enter symptoms on the left and click Analyze to trigger the differential diagnosis.</span>",
+        "waiting_msg": "⏳ Awaiting clinical data...<br><span style='font-size:14px;'>Enter symptoms on the left to trigger EBM diagnosis.</span>",
         "primary_dx": "Primary Diagnosis",
-        "confidence": "Confidence:",
-        "ddx_header": "📊 Differential Diagnosis Probabilities (Top 3)",
+        "ddx_header": "📊 Differential Diagnosis Probabilities",
         "icd_label": "ICD-10 Code:",
-        "rx_header": "💊 Recommended Prescriptions & Interventions",
-        "disclaimer": "⚠️ For medical professional use only. Final signature required by a physician."
+        "rx_header": "💊 Recommended Prescriptions",
+        "special_pop": "👨‍👩‍👧 Special Populations (Pregnancy/Peds)",
+        "guidelines": "📚 Clinical Guidelines & References",
+        "disclaimer": "⚠️ For medical professional use only."
     }
     db_file = "dermatology_core_data_EN.json"
 
@@ -109,13 +112,9 @@ col1, spacer, col2 = st.columns([1.2, 0.1, 1.5])
 with col1:
     st.markdown(f"### {ui['input_header']}")
     symptoms = st.text_area(ui["symptoms_label"], placeholder=ui["symptoms_placeholder"], height=160)
-    
-    # The Magic Trigger Button: Clicking this forces the text box to save and updates the UI
     st.button(ui["button"], type="primary", use_container_width=True)
-    
-    st.markdown("<br>", unsafe_allow_html=True) # spacer
+    st.markdown("<br>", unsafe_allow_html=True)
     uploaded_image = st.file_uploader(ui["upload_label"], type=["jpg", "jpeg", "png"])
-    
     if uploaded_image:
         st.image(uploaded_image, caption="Scan Active", use_container_width=True, clamp=True)
 
@@ -123,78 +122,90 @@ with col2:
     st.markdown(f"### {ui['output_header']}")
     
     if not symptoms.strip():
-        # Display the beautiful waiting state
-        st.markdown(f"""
-        <div class="waiting-state">
-            <h2>{ui['waiting_msg']}</h2>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"<div class='waiting-state'><h2>{ui['waiting_msg']}</h2></div>", unsafe_allow_html=True)
     else:
-        # --- 100% OFFLINE PROBABILITY MATH ENGINE ---
+        # --- OFFLINE PROBABILITY MATH ENGINE (UPGRADED FOR NEW SCHEMA) ---
         scores = {}
         symptom_lower = symptoms.lower()
         
-        # Calculate scores for ALL diseases simultaneously
-        for key, data in kb["conditions"].items():
+        # Support both old "conditions" format and new generic format
+        dataset = kb.get("conditions", kb) 
+        
+        for key, data in dataset.items():
+            # Skip metadata keys
+            if key in ["metadata", "global_settings", "morphology_builder"]: continue
+            
             score = 0
             
-            # 1. High-weight exact name matches
-            if key.lower() in symptom_lower: score += 20
-            if data.get("name_en", "").lower() in symptom_lower: score += 20
-            if data.get("name_cn", "") in symptom_lower or data.get("name", "") in symptom_lower: score += 20
+            # 1. Name matches (Supports old 'name_cn' and new 'ChineseName')
+            names_to_check = [
+                key.lower(), 
+                data.get("name_en", "").lower(), data.get("name_cn", "").lower(), data.get("name", "").lower(),
+                data.get("EnglishName", "").lower(), data.get("ChineseName", "").lower()
+            ]
+            for n in names_to_check:
+                if n and n in symptom_lower: score += 20
             
-            # 2. Medium-weight physical finding matches
-            findings = data.get("key_physical_findings", data.get("关键体征", []))
+            # 2. Findings & Symptoms matches
+            findings = []
+            findings.extend(data.get("key_physical_findings", data.get("关键体征", [])))
+            findings.extend(data.get("Symptoms", []))
+            if "PhysicalFindings" in data:
+                findings.extend(data["PhysicalFindings"].get("PrimaryLesions", []))
+                findings.extend(data["PhysicalFindings"].get("SecondaryLesions", []))
+            
             for finding in findings:
                 words = finding.replace("_", " ").lower().split()
                 for word in words:
                     if len(word) > 2 and word in symptom_lower: score += 3
             
-            # 3. Low-weight DDx context matches
+            # 3. DDx matches
             ddx_list = data.get("differential_diagnosis", data.get("鉴别诊断", []))
+            if "DifferentialDiagnosis" in data: ddx_list.extend(data["DifferentialDiagnosis"])
             for ddx in ddx_list:
-                disease_str = ddx.get("disease", ddx.get("疾病", "")).replace("_", " ").lower()
+                if isinstance(ddx, dict):
+                    disease_str = ddx.get("disease", ddx.get("疾病", "")).replace("_", " ").lower()
+                else:
+                    disease_str = str(ddx).lower()
                 if disease_str and disease_str in symptom_lower: score += 1
                     
             scores[key] = score
 
-        # Sort diseases by score
+        # Math logic
         sorted_diseases = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-        
-        # Calculate Probabilities (Relative Confidence for Top 3)
         top_3 = sorted_diseases[:3]
         top_total_score = sum(v for k, v in top_3)
-        
         probabilities = []
+        
         if top_total_score > 0:
             for k, v in top_3:
-                prob = (v / top_total_score) * 100
-                probabilities.append((k, prob))
+                probabilities.append((k, (v / top_total_score) * 100))
         else:
-            default_key = list(kb["conditions"].keys())[0]
-            probabilities = [(default_key, 98.5), (list(kb["conditions"].keys())[1], 1.0), (list(kb["conditions"].keys())[2], 0.5)]
+            default_key = list(dataset.keys())[0] if "metadata" not in list(dataset.keys())[0] else list(dataset.keys())[1]
+            probabilities = [(default_key, 98.5), (list(dataset.keys())[2], 1.0), (list(dataset.keys())[3], 0.5)]
 
-        # --- RENDER STUNNING UI ---
+        # --- RENDER UI ---
+        primary_key, primary_prob = probabilities[0]
+        matched_data = dataset[primary_key]
+        
+        name = matched_data.get("ChineseName", matched_data.get("name_cn", matched_data.get("name", primary_key)))
+        name_en = matched_data.get("EnglishName", matched_data.get("name_en", ""))
+        icd = matched_data.get("ICD10", matched_data.get("icd10", "Unknown"))
         
         # 1. Primary Diagnosis Card
-        primary_key, primary_prob = probabilities[0]
-        matched_data = kb["conditions"][primary_key]
-        
-        name = matched_data.get("name", primary_key)
-        name_en_or_cn = matched_data.get("name_en", matched_data.get("name_cn", ""))
-        
         st.markdown(f"""
         <div class="diagnosis-card">
             <h4 style="color: #4CAF50; margin-top: 0;">{ui['primary_dx']}</h4>
-            <h2>{name} <span style="font-size: 18px; color: #666;">({name_en_or_cn})</span></h2>
-            <p><b>{ui['icd_label']}</b> <code>{matched_data['icd10']}</code></p>
+            <h2>{name} <span style="font-size: 18px; color: #666;">({name_en})</span></h2>
+            <p><b>{ui['icd_label']}</b> <code>{icd}</code></p>
         </div>
         """, unsafe_allow_html=True)
         
-        # 2. Probability Progress Bars (Top 3 DDx)
+        # 2. Probability Progress Bars
         st.markdown(f"**{ui['ddx_header']}**")
         for dx_key, prob in probabilities:
-            dx_name = kb["conditions"][dx_key].get("name", dx_key)
+            dx_data = dataset[dx_key]
+            dx_name = dx_data.get("ChineseName", dx_data.get("name_cn", dx_data.get("name", dx_key)))
             col_dx, col_prob = st.columns([3, 1])
             with col_dx:
                 st.markdown(f"*{dx_name}*")
@@ -204,26 +215,54 @@ with col2:
                 
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # 3. Beautiful Expanding Prescription Panels
+        # 3. Prescriptions & Treatments
         st.markdown(f"### {ui['rx_header']}")
-        prescriptions = matched_data.get("处方", matched_data.get("prescriptions", {}))
         
-        for category, drugs in prescriptions.items():
-            with st.expander(f"📌 {category.replace('_', ' ').title()}", expanded=True):
-                for item in drugs:
-                    if "drug" in item or "药品" in item:
-                        d_name = item.get("drug", item.get("药品", "Unknown Drug"))
-                        d_en = item.get("英文名", item.get("drug_cn", ""))
-                        dose = item.get("dose", item.get("用法", "Standard dose"))
-                        
-                        st.markdown(f"**{d_name}** ({d_en})  \n*{dose}*")
-                        
-                        alert = item.get("alert", item.get("警示", ""))
-                        if alert: 
-                            color = "red" if "RED" in alert.upper() or "红" in alert else "orange" if "YELLOW" in alert.upper() or "黄" in alert else "green"
-                            st.markdown(f":{color}[**Safety Alert: {alert}**]")
-                        st.divider()
-                    else:
-                        st.info(f"💡 {item.get('special', item.get('特殊说明', 'Intervention'))}")
+        # Support old "prescriptions" format
+        if "处方" in matched_data or "prescriptions" in matched_data:
+            prescriptions = matched_data.get("处方", matched_data.get("prescriptions", {}))
+            for category, drugs in prescriptions.items():
+                with st.expander(f"📌 {category.replace('_', ' ').title()}", expanded=True):
+                    for item in drugs:
+                        if "drug" in item or "药品" in item:
+                            st.markdown(f"**{item.get('drug', item.get('药品'))}** \n*{item.get('dose', item.get('用法', ''))}*")
+                        else:
+                            st.info(f"💡 {item.get('special', item.get('特殊说明', ''))}")
+        
+        # Support new "Treatment" format
+        elif "Treatment" in matched_data:
+            for category, treatments in matched_data["Treatment"].items():
+                with st.expander(f"📌 {category} Line Treatment", expanded=True):
+                    for t in treatments:
+                        st.markdown(f"- {t}")
+
+        # 4. NEW: Special Populations (Pregnancy & Pediatrics)
+        has_pregnancy = "Pregnancy" in matched_data
+        has_pediatric = "PediatricConsiderations" in matched_data
+        
+        if has_pregnancy or has_pediatric:
+            with st.expander(ui["special_pop"], expanded=False):
+                if has_pregnancy:
+                    st.markdown("**🤰 Pregnancy Guidelines:**")
+                    st.success(f"Safe: {', '.join(matched_data['Pregnancy'].get('SafeDrugs', []))}")
+                    st.error(f"Avoid: {', '.join(matched_data['Pregnancy'].get('Avoid', []))}")
+                if has_pediatric:
+                    st.markdown("**👶 Pediatric Considerations:**")
+                    st.info(str(matched_data["PediatricConsiderations"]))
+
+        # 5. NEW: EBM Guidelines & References
+        has_guidelines = "Guidelines" in matched_data
+        has_refs = "References" in matched_data
+        
+        if has_guidelines or has_refs:
+            with st.expander(ui["guidelines"], expanded=False):
+                if has_guidelines:
+                    st.markdown("**Core Guidelines:**")
+                    for g_name, g_text in matched_data["Guidelines"].items():
+                        st.markdown(f"- <span class='ebm-tag'>{g_name}</span> {g_text}", unsafe_allow_html=True)
+                if has_refs:
+                    st.markdown("<br>**Literature References:**", unsafe_allow_html=True)
+                    for ref in matched_data["References"]:
+                        st.caption(f"📖 *{ref.get('Title', '')}* — {ref.get('Citation', '')}")
 
         st.caption(ui["disclaimer"])
