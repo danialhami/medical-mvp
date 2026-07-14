@@ -61,7 +61,7 @@ if language == "中文 (Chinese)":
         "output_header": "🤖 实时诊断与循证决策",
         "waiting_msg": "⏳ 等待临床输入...<br><span style='font-size:14px;'>请在左侧输入症状并点击分析按钮。</span>",
         "primary_dx": "首选诊断 (Primary Diagnosis)",
-        "ddx_header": "📊 鉴别诊断概率 (Top 3 DDx)",
+        "ddx_header": "📊 鉴别诊断概率 (Top 5 DDx)",
         "icd_label": "ICD-10 编码:",
         "rx_header": "💊 推荐处方与干预方案",
         "special_pop": "👨‍👩‍👧 特殊人群用药指南",
@@ -81,7 +81,7 @@ else:
         "output_header": "🤖 Real-Time Diagnostic Insights",
         "waiting_msg": "⏳ Awaiting clinical data...<br><span style='font-size:14px;'>Enter symptoms on the left to trigger EBM diagnosis.</span>",
         "primary_dx": "Primary Diagnosis",
-        "ddx_header": "📊 Differential Diagnosis Probabilities",
+        "ddx_header": "📊 Differential Diagnosis Probabilities (Top 5)",
         "icd_label": "ICD-10 Code:",
         "rx_header": "💊 Recommended Prescriptions",
         "special_pop": "👨‍👩‍👧 Special Populations (Pregnancy/Peds)",
@@ -102,6 +102,10 @@ def load_knowledge_base(file_name):
 
 kb = load_knowledge_base(db_file)
 
+# Extract only disease keys to avoid crashes with metadata
+dataset = kb.get("conditions", kb)
+disease_keys = [k for k in dataset.keys() if k not in ["metadata", "global_settings", "morphology_builder"]]
+
 # 4. Main Layout
 st.markdown(f"<h1 class='header-gradient'>🏥 {ui['title']}</h1>", unsafe_allow_html=True)
 st.caption(ui["subtitle"])
@@ -119,25 +123,28 @@ with col1:
         st.image(uploaded_image, caption="Scan Active", use_container_width=True, clamp=True)
 
 with col2:
-    st.markdown(f"### {ui['output_header']}")
-    
     if not symptoms.strip():
+        # Display the waiting state with the standard header
+        st.markdown(f"### {ui['output_header']}")
         st.markdown(f"<div class='waiting-state'><h2>{ui['waiting_msg']}</h2></div>", unsafe_allow_html=True)
     else:
-        # --- OFFLINE PROBABILITY MATH ENGINE (UPGRADED FOR NEW SCHEMA) ---
+        # --- NEW BILINGUAL DYNAMIC HEADER ---
+        if language == "中文 (Chinese)":
+            st.markdown("### **🤖 实时诊断与循证决策**")
+            st.markdown("<p style='color: #8898aa; font-size: 14px; margin-top: -15px; margin-bottom: 20px;'><i>Real-Time Diagnostic Insights & Evidence-Based Medicine</i></p>", unsafe_allow_html=True)
+        else:
+            st.markdown("### **🤖 Real-Time Diagnostic Insights & EBM**")
+            st.markdown("<p style='color: #8898aa; font-size: 14px; margin-top: -15px; margin-bottom: 20px;'><i>实时诊断与循证决策</i></p>", unsafe_allow_html=True)
+
+        # --- OFFLINE PROBABILITY MATH ENGINE ---
         scores = {}
         symptom_lower = symptoms.lower()
         
-        # Support both old "conditions" format and new generic format
-        dataset = kb.get("conditions", kb) 
-        
-        for key, data in dataset.items():
-            # Skip metadata keys
-            if key in ["metadata", "global_settings", "morphology_builder"]: continue
-            
+        for key in disease_keys:
+            data = dataset[key]
             score = 0
             
-            # 1. Name matches (Supports old 'name_cn' and new 'ChineseName')
+            # 1. Name matches
             names_to_check = [
                 key.lower(), 
                 data.get("name_en", "").lower(), data.get("name_cn", "").lower(), data.get("name", "").lower(),
@@ -171,18 +178,21 @@ with col2:
                     
             scores[key] = score
 
-        # Math logic
+        # Top 5 Differential Diagnosis Logic
         sorted_diseases = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-        top_3 = sorted_diseases[:3]
-        top_total_score = sum(v for k, v in top_3)
+        top_5 = sorted_diseases[:5]
+        top_total_score = sum(v for k, v in top_5)
         probabilities = []
         
         if top_total_score > 0:
-            for k, v in top_3:
+            for k, v in top_5:
                 probabilities.append((k, (v / top_total_score) * 100))
         else:
-            default_key = list(dataset.keys())[0] if "metadata" not in list(dataset.keys())[0] else list(dataset.keys())[1]
-            probabilities = [(default_key, 98.5), (list(dataset.keys())[2], 1.0), (list(dataset.keys())[3], 0.5)]
+            # Safely generate default probabilities if no match found
+            probabilities = [
+                (disease_keys[0], 80.0), (disease_keys[1], 10.0), 
+                (disease_keys[2], 5.0), (disease_keys[3], 3.0), (disease_keys[4], 2.0)
+            ]
 
         # --- RENDER UI ---
         primary_key, primary_prob = probabilities[0]
@@ -201,7 +211,7 @@ with col2:
         </div>
         """, unsafe_allow_html=True)
         
-        # 2. Probability Progress Bars
+        # 2. Probability Progress Bars (Now TOP 5)
         st.markdown(f"**{ui['ddx_header']}**")
         for dx_key, prob in probabilities:
             dx_data = dataset[dx_key]
@@ -218,25 +228,33 @@ with col2:
         # 3. Prescriptions & Treatments
         st.markdown(f"### {ui['rx_header']}")
         
-        # Support old "prescriptions" format
         if "处方" in matched_data or "prescriptions" in matched_data:
             prescriptions = matched_data.get("处方", matched_data.get("prescriptions", {}))
             for category, drugs in prescriptions.items():
                 with st.expander(f"📌 {category.replace('_', ' ').title()}", expanded=True):
                     for item in drugs:
                         if "drug" in item or "药品" in item:
-                            st.markdown(f"**{item.get('drug', item.get('药品'))}** \n*{item.get('dose', item.get('用法', ''))}*")
+                            d_name = item.get("drug", item.get("药品", "Unknown Drug"))
+                            d_en = item.get("英文名", item.get("drug_cn", ""))
+                            dose = item.get("dose", item.get("用法", "Standard dose"))
+                            st.markdown(f"**{d_name}** ({d_en})  \n*{dose}*")
+                            
+                            # Drug Interaction / Safety Checker Logic
+                            alert = item.get("alert", item.get("警示", ""))
+                            if alert: 
+                                color = "red" if "RED" in alert.upper() or "红" in alert else "orange" if "YELLOW" in alert.upper() or "黄" in alert else "green"
+                                st.markdown(f":{color}[**Safety Alert: {alert}**]")
+                            st.divider()
                         else:
                             st.info(f"💡 {item.get('special', item.get('特殊说明', ''))}")
         
-        # Support new "Treatment" format
         elif "Treatment" in matched_data:
             for category, treatments in matched_data["Treatment"].items():
                 with st.expander(f"📌 {category} Line Treatment", expanded=True):
                     for t in treatments:
                         st.markdown(f"- {t}")
 
-        # 4. NEW: Special Populations (Pregnancy & Pediatrics)
+        # 4. Special Populations
         has_pregnancy = "Pregnancy" in matched_data
         has_pediatric = "PediatricConsiderations" in matched_data
         
@@ -250,7 +268,7 @@ with col2:
                     st.markdown("**👶 Pediatric Considerations:**")
                     st.info(str(matched_data["PediatricConsiderations"]))
 
-        # 5. NEW: EBM Guidelines & References
+        # 5. EBM Guidelines & References
         has_guidelines = "Guidelines" in matched_data
         has_refs = "References" in matched_data
         
